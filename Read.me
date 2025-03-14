@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe AI</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; background-color: black; color: white; }
+        h1 { margin-top: 20px; }
+        .board { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 5px; justify-content: center; }
+        .cell { width: 100px; height: 100px; font-size: 2em; display: flex; align-items: center; justify-content: center; border: 2px solid white; cursor: pointer; background: black; }
+        .cell.taken { cursor: not-allowed; }
+        .btn { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; background: white; color: black; }
+    </style>
+</head>
+<body>
+
+    <h1>Tic Tac Toe</h1>
+    <p>Choose a mode:</p>
+    <button class="btn" onclick="startGame('ai')">Play vs AI</button>
+    <button class="btn" onclick="startGame('two-player')">Play with a Friend</button>
+    
+    <div class="board" id="board"></div>
+    <p id="status"></p>
+    <button class="btn" onclick="resetGame()">Restart Game</button>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X";
+        let gameMode = "two-player";
+        let gameActive = false;
+
+        function startGame(mode) {
+            gameMode = mode;
+            gameActive = true;
+            board = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            document.getElementById("status").textContent = "Player X's turn";
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const boardElement = document.getElementById("board");
+            boardElement.innerHTML = "";
+            board.forEach((value, index) => {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                if (value) cell.classList.add("taken");
+                cell.textContent = value;
+                cell.addEventListener("click", () => handleMove(index));
+                boardElement.appendChild(cell);
+            });
+        }
+
+        function handleMove(index) {
+            if (!gameActive || board[index]) return;
+            board[index] = currentPlayer;
+            renderBoard();
+            checkWinner();
+
+            if (gameActive && gameMode === "ai" && currentPlayer === "O") {
+                setTimeout(aiMove, 500);
+            } else {
+                currentPlayer = currentPlayer === "X" ? "O" : "X";
+                document.getElementById("status").textContent = `Player ${currentPlayer}'s turn`;
+            }
+        }
+
+        function aiMove() {
+            let bestMove = minimax(board, "O").index;
+            board[bestMove] = "O";
+            renderBoard();
+            checkWinner();
+            currentPlayer = "X";
+            document.getElementById("status").textContent = `Player ${currentPlayer}'s turn`;
+        }
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            for (let pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    document.getElementById("status").textContent = `Player ${board[a]} wins!`;
+                    gameActive = false;
+                    return;
+                }
+            }
+            if (!board.includes("")) {
+                document.getElementById("status").textContent = "It's a tie!";
+                gameActive = false;
+            }
+        }
+
+        function resetGame() {
+            startGame(gameMode);
+        }
+
+        function minimax(newBoard, player) {
+            const availableSpots = newBoard.map((val, i) => (val === "" ? i : null)).filter(v => v !== null);
+            if (checkWin(newBoard, "X")) return { score: -10 };
+            if (checkWin(newBoard, "O")) return { score: 10 };
+            if (availableSpots.length === 0) return { score: 0 };
+
+            let moves = [];
+            for (let i of availableSpots) {
+                let move = { index: i };
+                newBoard[i] = player;
+                move.score = minimax(newBoard, player === "O" ? "X" : "O").score;
+                newBoard[i] = "";
+                moves.push(move);
+            }
+            return moves.reduce((best, move) => 
+                (player === "O" ? move.score > best.score : move.score < best.score) ? move : best
+            , { score: player === "O" ? -Infinity : Infinity });
+        }
+
+        function checkWin(board, player) {
+            return [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+                .some(pattern => pattern.every(i => board[i] === player));
+        }
+
+        startGame("two-player");
+    </script>
+
+</body>
+</html>
